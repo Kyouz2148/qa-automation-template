@@ -75,7 +75,7 @@ jobs:
 
       - name: Upload k6 Reports
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: k6-performance-report
           path: reports/k6-summary.*
