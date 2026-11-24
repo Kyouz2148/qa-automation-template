@@ -83,7 +83,7 @@ jobs:
 
       - name: Comment k6 Summary on PR
         if: ${{ !cancelled() && github.event_name == 'pull_request' && hashFiles('reports/k6-summary.md') != '' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
