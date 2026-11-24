@@ -102,7 +102,7 @@ jobs:
       - run: npm ci
 
       - name: Download All Blob Reports
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: blob-report-*
           path: all-blob-reports
