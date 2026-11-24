@@ -72,7 +72,7 @@ jobs:
 
       - name: Upload Blob Report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: blob-report-${{ matrix.shard }}
           path: blob-report/
@@ -80,7 +80,7 @@ jobs:
 
       - name: Upload Failure Traces & Screenshots
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: failure-artifacts-shard-${{ matrix.shard }}
           path: test-results/
@@ -120,14 +120,14 @@ jobs:
         run: node src/utils/reporters/pr-summary.mjs
 
       - name: Upload Merged HTML Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-merged-html-report
           path: reports/html/
           retention-days: 14
 
       - name: Upload PR Summary & JSON Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-json-summary
           path: |
