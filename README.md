@@ -1,8 +1,12 @@
-# 🧪 QA Automation Template — Production-Ready (Playwright + k6 + GitHub Actions)
+# 🧪 QA Automation Template — Production-Ready
 
-Repositório modelo (**GitHub Template**) pronto para produção, projetado para times de QA e Engenharia que desejam iniciar um projeto de automação escalável sem partir do zero.
+[![CI — Sharded E2E & API Tests](https://github.com/Kyouz2148/qa-automation-template/actions/workflows/ci-e2e-sharded.yml/badge.svg)](https://github.com/Kyouz2148/qa-automation-template/actions/workflows/ci-e2e-sharded.yml)
+[![Performance — k6 Load Tests](https://github.com/Kyouz2148/qa-automation-template/actions/workflows/ci-load-k6.yml/badge.svg)](https://github.com/Kyouz2148/qa-automation-template/actions/workflows/ci-load-k6.yml)
+[![Nightly — Cross-Browser Regression](https://github.com/Kyouz2148/qa-automation-template/actions/workflows/ci-nightly-full.yml/badge.svg)](https://github.com/Kyouz2148/qa-automation-template/actions/workflows/ci-nightly-full.yml)
 
-Inclui **Playwright (Web E2E + API + Acessibilidade)**, **k6 (Testes de Carga e Performance)**, **GitHub Actions com Sharding/Paralelismo**, **Merge automático de relatórios** e **Comentário automático no Pull Request**.
+Repositório modelo (**GitHub Template**) pronto para produção, projetado para times de QA e Engenharia que desejam iniciar uma suíte profissional de automação **sem partir do zero**.
+
+Combina **Playwright (Web E2E + API + Acessibilidade)**, **k6 (Testes de Carga e Performance)**, **GitHub Actions com Sharding/Paralelismo**, **Merge automático de relatórios** e **Comentário automático no Pull Request**.
 
 ---
 
@@ -28,7 +32,7 @@ Inclui **Playwright (Web E2E + API + Acessibilidade)**, **k6 (Testes de Carga e 
   - **`ci-load-k6.yml`**: Execução manual, agendada ou por label `run-load-test` no PR, com publicação no _Job Summary_ e comentário no PR
   - **`ci-nightly-full.yml`**: Regressão noturna cross-browser (`chromium`, `firefox`, `webkit`) com sharding
 - **Demo App embutido (`demo-app/server.mjs`)**
-  - Aplicação Web + API REST zero-dependência para que todos os testes rodem e passem _out-of-the-box_ no primeiro clone ou PR. Basta trocar `USE_DEMO_APP=false` e configurar `BASE_URL`/`API_URL` para apontar para seu sistema real.
+  - Aplicação Web + API REST zero-dependência para que todos os testes rodem e passem _out-of-the-box_ no primeiro clone ou PR. Basta configurar `USE_DEMO_APP=false` e apontar `BASE_URL`/`API_URL` para seu sistema real.
 
 ---
 
@@ -74,6 +78,11 @@ Inclui **Playwright (Web E2E + API + Acessibilidade)**, **k6 (Testes de Carga e 
 
 ## 🚀 Quickstart Local
 
+### Pré-requisitos
+
+- **Node.js 22+** e **npm**
+- _(Opcional para carga)_ **k6** instalado localmente ou **Docker / Docker Compose**
+
 ### 1. Instalar dependências e navegadores
 
 ```bash
@@ -103,19 +112,19 @@ npm run report:html
 
 ### 3. Executar testes de carga com k6
 
-Com o `k6` instalado localmente (ou via Docker Compose):
+Com o `k6` instalado localmente:
 
 ```bash
 # Terminal 1: iniciar a aplicação alvo (ou usar URL de staging no .env)
 npm run demo:start
 
-# Terminal 2: rodar smoke ou load
+# Terminal 2: rodar smoke, load ou stress
 npm run k6:smoke
 npm run k6:load
 npm run k6:stress
 ```
 
-Ou via Docker Compose (sem precisar instalar k6 localmente):
+Ou via Docker Compose (sem precisar instalar o k6 na máquina):
 
 ```bash
 K6_PROFILE=smoke docker compose up --abort-on-container-exit --exit-code-from k6
@@ -149,18 +158,19 @@ K6_PROFILE=smoke docker compose up --abort-on-container-exit --exit-code-from k6
 
 ---
 
-## 🔧 Como adaptar para o seu projeto real
+## 🔧 Como usar como GitHub Template no seu projeto
 
-1. **Ative como GitHub Template**: No GitHub, acesse **Settings → General → Template repository** para liberar o botão _"Use this template"_.
-2. **Aponte para seu ambiente**:
-   - No `.env` local ou em **Settings → Secrets and variables → Actions**:
-     - `USE_DEMO_APP=false`
-     - `BASE_URL=https://staging.sua-empresa.com`
-     - `API_URL=https://api-staging.sua-empresa.com`
-     - Secrets: `TEST_USER_EMAIL` e `TEST_USER_PASSWORD`
-3. **Substitua os clientes, schemas e Page Objects**:
-   - Adicione seus endpoints em `src/api/clients/` e contratos em `src/api/schemas/`
-   - Modele suas telas em `src/pages/` e exponha-as em `src/fixtures/test.fixture.ts`
+1. **Habilite o modo Template no GitHub**:
+   Acesse **Settings → General** e marque **Template repository** para liberar o botão **"Use this template"**.
+2. **Configure seu ambiente alvo**:
+   No `.env` local ou em **Settings → Secrets and variables → Actions**:
+   - `USE_DEMO_APP=false`
+   - `BASE_URL=https://staging.sua-empresa.com`
+   - `API_URL=https://api-staging.sua-empresa.com`
+   - Secrets: `TEST_USER_EMAIL` e `TEST_USER_PASSWORD`
+3. **Adapte para o seu domínio**:
+   - Adicione seus clientes HTTP em `src/api/clients/` e contratos Zod em `src/api/schemas/`
+   - Modele suas páginas em `src/pages/` e registre-as em `src/fixtures/test.fixture.ts`
    - Ajuste os thresholds de SLO em `k6/config/options.js`
 
 ---
