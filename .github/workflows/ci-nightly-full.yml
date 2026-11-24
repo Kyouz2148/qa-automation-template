@@ -1,0 +1,54 @@
+name: Nightly — Cross-Browser Regression
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SHARD_TOTAL: 3
+
+jobs:
+  cross-browser:
+    name: ${{ matrix.browser }} (Shard ${{ matrix.shard }}/${{ env.SHARD_TOTAL }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [web-chromium, web-firefox, web-webkit]
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+      - run: npx playwright install --with-deps
+
+      - name: Run Cross-Browser Shard
+        env:
+          PW_SHARD_MODE: 'true'
+          USE_DEMO_APP: ${{ vars.USE_DEMO_APP || 'true' }}
+          BASE_URL: ${{ vars.BASE_URL || 'http://127.0.0.1:4173' }}
+          API_URL: ${{ vars.API_URL || 'http://127.0.0.1:4173' }}
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL || 'qa.engineer@example.com' }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD || 'Password123!' }}
+        run: >
+          npx playwright test
+          --project=setup
+          --project=${{ matrix.browser }}
+          --shard=${{ matrix.shard }}/${{ env.SHARD_TOTAL }}
+
+      - name: Upload Blob Report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-blob-${{ matrix.browser }}-${{ matrix.shard }}
+          path: blob-report/
+          retention-days: 7

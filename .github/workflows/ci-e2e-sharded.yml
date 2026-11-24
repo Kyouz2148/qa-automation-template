@@ -1,0 +1,172 @@
+name: CI — Sharded E2E & API Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  NODE_VERSION: '22'
+  SHARD_TOTAL: 4
+
+jobs:
+  quality-gate:
+    name: Typecheck, Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+      - run: npm run validate
+
+  playwright-tests:
+    name: Playwright (Shard ${{ matrix.shard }}/${{ env.SHARD_TOTAL }})
+    needs: quality-gate
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright Sharded Suite (API + Web Chromium)
+        env:
+          PW_SHARD_MODE: 'true'
+          USE_DEMO_APP: ${{ vars.USE_DEMO_APP || 'true' }}
+          BASE_URL: ${{ vars.BASE_URL || 'http://127.0.0.1:4173' }}
+          API_URL: ${{ vars.API_URL || 'http://127.0.0.1:4173' }}
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL || 'qa.engineer@example.com' }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD || 'Password123!' }}
+        run: >
+          npx playwright test
+          --project=setup
+          --project=api
+          --project=web-chromium
+          --shard=${{ matrix.shard }}/${{ env.SHARD_TOTAL }}
+
+      - name: Upload Blob Report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-${{ matrix.shard }}
+          path: blob-report/
+          retention-days: 3
+
+      - name: Upload Failure Traces & Screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-artifacts-shard-${{ matrix.shard }}
+          path: test-results/
+          retention-days: 7
+
+  merge-and-report:
+    name: Merge Reports & Comment on PR
+    needs: playwright-tests
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Download All Blob Reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: blob-report-*
+          path: all-blob-reports
+          merge-multiple: true
+
+      - name: Merge Sharded Reports (HTML + JSON)
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: reports/html
+          PLAYWRIGHT_JSON_OUTPUT_NAME: reports/results.json
+        run: |
+          mkdir -p reports
+          npx playwright merge-reports --reporter=html --reporter=json ./all-blob-reports
+
+      - name: Generate PR & Step Summary Markdown
+        run: node src/utils/reporters/pr-summary.mjs
+
+      - name: Upload Merged HTML Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-merged-html-report
+          path: reports/html/
+          retention-days: 14
+
+      - name: Upload PR Summary & JSON Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-json-summary
+          path: |
+            reports/results.json
+            reports/pr-comment.md
+          retention-days: 14
+
+      - name: Post or Update PR Comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- qa-automation-report -->';
+            const body = fs.readFileSync('reports/pr-comment.md', 'utf8');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              per_page: 100,
+            });
+
+            const existing = comments.find(
+              (c) => c.user?.type === 'Bot' && c.body?.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }

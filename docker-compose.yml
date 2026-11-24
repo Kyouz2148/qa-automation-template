@@ -1,0 +1,31 @@
+services:
+  demo-app:
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - ./demo-app:/app/demo-app:ro
+    command: node demo-app/server.mjs
+    environment:
+      HOST: 0.0.0.0
+      PORT: 4173
+    ports:
+      - '4173:4173'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:4173/api/health']
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  k6:
+    image: grafana/k6:latest
+    depends_on:
+      demo-app:
+        condition: service_healthy
+    volumes:
+      - ./k6:/scripts/k6:ro
+      - ./reports:/scripts/reports
+    working_dir: /scripts
+    environment:
+      API_URL: http://demo-app:4173
+      K6_PROFILE: ${K6_PROFILE:-smoke}
+    command: run k6/scenarios/tasks-load.k6.js
