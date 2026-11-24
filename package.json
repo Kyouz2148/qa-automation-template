@@ -29,7 +29,7 @@
     "@axe-core/playwright": "^4.10.2",
     "@eslint/js": "^9.22.0",
     "@playwright/test": "^1.51.1",
-    "@types/node": "^22.13.10",
+    "@types/node": "^26.6.6",
     "dotenv": "^16.4.7",
     "eslint": "^9.22.0",
     "eslint-plugin-playwright": "^2.2.0",
