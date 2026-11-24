@@ -13,7 +13,7 @@ env:
 
 jobs:
   cross-browser:
-    name: ${{ matrix.browser }} (Shard ${{ matrix.shard }}/${{ env.SHARD_TOTAL }})
+    name: ${{ matrix.browser }} (Shard ${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

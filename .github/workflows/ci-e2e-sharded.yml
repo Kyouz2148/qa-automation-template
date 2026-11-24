@@ -35,7 +35,7 @@ jobs:
       - run: npm run validate
 
   playwright-tests:
-    name: Playwright (Shard ${{ matrix.shard }}/${{ env.SHARD_TOTAL }})
+    name: Playwright (Shard ${{ matrix.shard }}/4)
     needs: quality-gate
     runs-on: ubuntu-latest
     strategy:
